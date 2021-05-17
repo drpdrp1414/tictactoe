@@ -1,7 +1,7 @@
 
 const GameBoard = (() => {
     var boardElement = document.querySelector('.board')
-    var board = ['', '', '', '', '', '', '', '', '',]
+    var board = ['', '', '', '', '', '', '', '', '']
     //set up grid for html
     const init = (function(){
         //set up cells for the game
@@ -11,7 +11,6 @@ const GameBoard = (() => {
             gridCell.id = `cell-${i}`
             gridCell.classList.add('cell', 'unactive-cell')
             gridCell.innerHTML = ""
-            board.push(gridCell.innerHTML)
             boardElement.appendChild(gridCell)
         }
     })()
@@ -22,10 +21,19 @@ const GameBoard = (() => {
 
     //reset board to default settings
     function reset(){
-        board = []
+        for(let i = 0; i < 9; i++){
+            board[i] = ''
+            var cell = document.getElementById(`cell-${i}`)
+            if(cell.classList.contains('active-cell')){
+                cell.classList.remove('active-cell')
+                cell.classList.add('unactive-cell')
+            }
+        }
+        GameController.reset(currentPlayer)
+        displayController.render(board)
     }
 
-    return {showBoardArray, board}
+    return {showBoardArray, board, reset}
 
 })()
 
@@ -42,10 +50,11 @@ const displayController = (() => {
     return{render}
 })()
 
+//create player object
 function createPlayer(name, symbol){
     this.name = name
     this.symbol = symbol
-    console.log(`Created Player: ${this.name}`)
+    //console.log(`Created Player: ${this.name}`)
     return{name, symbol}
     
 }
@@ -59,17 +68,40 @@ const GameController = (() => {
             cell.addEventListener('click', placeLogic)
         }
 
+        //wire reset button
+        var resetButton = document.getElementById('reset-btn')
+        resetButton.addEventListener('click', GameBoard.reset)
 
     })()
 
     var player1 = createPlayer("Daniel", "X")
     var player2 = createPlayer("Jordy", "O")
+    var currentPlayer = player1
 
     //used to pass index from the init in game controller to placing piece
     function placeLogic(){
         var index = indexFromId(this.id)
-        console.log(index)
-        placePiece(player1, GameBoard.board, index)
+        placePiece(currentPlayer, GameBoard.board, index)
+
+        //check for win/tie
+        checkWin(GameBoard.board, currentPlayer.symbol)
+
+        //switch to other player
+        currentPlayer = switchTurn(currentPlayer)
+    }
+
+    function switchTurn(){
+        if(currentPlayer == player1){
+            return player2
+        }
+        else{
+            return player1
+        }
+    }
+
+    function reset(currentPlayer){
+        currentPlayer = player1
+        return currentPlayer
     }
 
     //grabs index from html-id
@@ -110,12 +142,54 @@ const GameController = (() => {
 
     //places piece and renders board
     function placePiece(player, board, index){
-        console.log(player.symbol)
-        board[index] = `${player.symbol}`
-        displayController.render(GameBoard.board)
+        var cell = document.getElementById(`cell-${index}`)
+        if(board[index] == ''){
+            cell.classList.remove('unactive-cell')
+            cell.classList.add('active-cell')
+            board[index] = `${player.symbol}`
+            displayController.render(GameBoard.board)
+            checkWin(board, player)
+        }
     }
 
-    function checkWin(board){
+    function checkWin(board, player){
+        var flag = false
+        var symbol = player.symbol
+        //check horizontal
+        if(
+            ((symbol === board[0]) && (board[0] == board[1]) && (board[1] === board[2])) || 
+            ((symbol === board[3]) && (board[3] == board[4]) && (board[4] === board[5])) ||
+            ((symbol === board[6]) && (board[6] == board[7]) && (board[7] === board[8]))){
+                flag = true
+            }
+        //check vertical
+        if(
+            ((symbol === board[0]) && (board[0] == board[3]) && (board[3] === board[6])) || 
+            ((symbol === board[1]) && (board[1] == board[4]) && (board[4] === board[7])) ||
+            ((symbol === board[2]) && (board[2] == board[5]) && (board[5] === board[8]))){
+                flag = true
+            }
+        //check diagonal
+        if(
+            ((symbol === board[0]) && (board[0] == board[4]) && (board[4] === board[8])) || 
+            ((symbol === board[2]) && (board[2] == board[4]) && (board[4] === board[6]))){
+                flag = true
+            }
 
+        if(flag == true){
+            alert(`${player.name} has won! Congrats!`)
+            GameBoard.reset()
+        }
     }
+
+    function logBoard(board){
+        console.log(
+            `${board[0]} | ${board[1]} | ${board[2]}\n
+            ${board[3]} | ${board[4]} | ${board[5]}\n
+            ${board[6]} | ${board[7]} | ${board[8]}
+            `
+        )
+    }
+
+    return{reset}
 })()
