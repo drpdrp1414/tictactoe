@@ -29,7 +29,7 @@ const GameBoard = (() => {
                 cell.classList.add('unactive-cell')
             }
         }
-        GameController.reset(currentPlayer)
+        GameController.reset()
         displayController.render(board)
     }
 
@@ -84,10 +84,12 @@ const GameController = (() => {
         placePiece(currentPlayer, GameBoard.board, index)
 
         //check for win/tie
-        checkWin(GameBoard.board, currentPlayer.symbol)
+        var win = checkWin(GameBoard.board, currentPlayer)
 
         //switch to other player
-        currentPlayer = switchTurn(currentPlayer)
+        if(win == false){
+            currentPlayer = switchTurn(currentPlayer)
+        }
     }
 
     function switchTurn(){
@@ -99,9 +101,8 @@ const GameController = (() => {
         }
     }
 
-    function reset(currentPlayer){
+    function reset(){
         currentPlayer = player1
-        return currentPlayer
     }
 
     //grabs index from html-id
@@ -148,7 +149,6 @@ const GameController = (() => {
             cell.classList.add('active-cell')
             board[index] = `${player.symbol}`
             displayController.render(GameBoard.board)
-            checkWin(board, player)
         }
     }
 
@@ -179,17 +179,24 @@ const GameController = (() => {
         if(flag == true){
             alert(`${player.name} has won! Congrats!`)
             GameBoard.reset()
+        }else{
+            //check for tie
+            let tie = true
+            for(let i = 0; i < 9; i++){
+                if(board[i] == ''){
+                    tie = false
+                }
+            }
+            console.log(tie)
+            if(tie == true){
+                alert(`This game was a tie! Play again!`)
+                flag = true
+                GameBoard.reset()
+            }
         }
+        return flag
     }
 
-    function logBoard(board){
-        console.log(
-            `${board[0]} | ${board[1]} | ${board[2]}\n
-            ${board[3]} | ${board[4]} | ${board[5]}\n
-            ${board[6]} | ${board[7]} | ${board[8]}
-            `
-        )
-    }
 
     return{reset}
 })()
