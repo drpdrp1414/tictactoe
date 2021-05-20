@@ -59,8 +59,78 @@ function createPlayer(name, symbol){
     
 }
 
-const GameController = (() => {
+function createBot(name, symbol){
+    this.name = name
+    this.symbol = symbol
 
+    function score(board, player){
+        if(GameController.checkWin(board, this) == true){
+            return 1
+        }else if(GameController.checkWin(board, player) == true){
+            return -1
+        }else if(GameController.checkTie(board)){
+            return 0
+        }else{
+            return null
+        }
+    }
+
+    function bestMove(board, player){
+        let bestScore = -10
+        let move
+        for(let i = 0; i < 9; i++){
+            if(board[i] == ''){
+                board[i] = this.symbol
+                let score = minimax(board, player, true)
+                board[i] = ''
+                if(score > bestScore){
+                    bestScore = score
+                    move = i
+                }
+                
+            }
+        }
+        return move
+    }
+    function minimax(board, player, isMax){
+        let result = score(board, player)
+        if(result !== null){
+            let score = result
+            return score
+        }
+        if(isMax == true){
+            let bestScore = -10
+            for(let i = 0; i < 9; i++){
+                if(board[i] == ''){
+                    board[i] = this.symbol
+                    let score = minimax(board, player, false)
+                    board[i] = ''
+                    bestScore = Math.max(score, bestScore)
+                }
+            }
+            return bestScore
+        }else{
+            let bestScore = 10
+            for(let i = 0; i < 9; i++){
+                if(board[i] == ''){
+                    board[i] = player.symbol
+                    let score = minimax(board, player, true)
+                    board[i] = ''
+                    bestScore = Math.min(score, bestScore)
+                }
+            }
+            return bestScore
+        }
+    }
+
+    return {name, symbol, bestMove}
+
+}
+
+
+
+
+const GameController = (() => {
     (function init(){
         //add event listeners to squares
         for(let i = 0; i < 9; i++){
@@ -70,13 +140,58 @@ const GameController = (() => {
 
         //wire reset button
         var resetButton = document.getElementById('reset-btn')
-        resetButton.addEventListener('click', GameBoard.reset)
+        resetButton.addEventListener('click', GameBoard.reset)    
 
     })()
 
+    var aiGame = false
+    var swapButton = document.getElementById('swap-btn')
+    swapButton.addEventListener('click', swapPlayer)
     var player1 = createPlayer("Daniel", "X")
     var player2 = createPlayer("Jordy", "O")
     var currentPlayer = player1
+
+    function swapPlayer(){
+        GameBoard.reset()
+        if(aiGame === false){
+            swapButton.innerHTML = "Play vs Player"
+            player1 = createBot('ProBot', 'X')
+            currentPlayer = player1
+            aiGame = true
+            botPlaceLogic()
+        }else{
+            swapButton.innerHTML = "Play vs AI"
+            player1 = createPlayer("Daniel", "X")
+            currentPlayer = player1
+            aiGame = false
+        }
+    }
+
+
+    function botPlaceLogic(){
+        move = player1.bestMove(GameBoard.board, player2)
+
+        //console.log(`player1: ${player1.name}, player2: ${player2.name}`)
+        placePiece(player1, GameBoard.board, move)
+        var win = checkWin(GameBoard.board, currentPlayer)
+        if(win == true){
+            alert(`${player.name} has won! Congrats!`)
+            GameBoard.reset()
+        }
+        if(win == false){
+            var tie = checkTie(GameBoard.board)
+            if(tie == true){
+                    alert(`This game was a tie! Play again!`)
+                    GameBoard.reset()
+            }
+        }
+        //switch to other player
+        if(win == false && tie == false){
+            currentPlayer = switchTurn(currentPlayer)
+        }
+    }
+
+
 
     //used to pass index from the init in game controller to placing piece
     function placeLogic(){
@@ -85,10 +200,23 @@ const GameController = (() => {
 
         //check for win/tie
         var win = checkWin(GameBoard.board, currentPlayer)
-
-        //switch to other player
+        if(win == true){
+            alert(`${currentPlayer.name} has won! Congrats!`)
+            GameBoard.reset()
+        }
         if(win == false){
+            var tie = checkTie(GameBoard.board)
+            if(tie == true){
+                    alert(`This game was a tie! Play again!`)
+                    GameBoard.reset()
+            }
+        }
+        //switch to other player
+        if(win == false && tie == false){
             currentPlayer = switchTurn(currentPlayer)
+        }
+        if(aiGame == true){
+            botPlaceLogic()
         }
     }
 
@@ -176,10 +304,11 @@ const GameController = (() => {
                 flag = true
             }
 
-        if(flag == true){
-            alert(`${player.name} has won! Congrats!`)
-            GameBoard.reset()
-        }else{
+        
+        return flag
+    }
+
+    function checkTie(board){
             //check for tie
             let tie = true
             for(let i = 0; i < 9; i++){
@@ -187,16 +316,10 @@ const GameController = (() => {
                     tie = false
                 }
             }
-            console.log(tie)
-            if(tie == true){
-                alert(`This game was a tie! Play again!`)
-                flag = true
-                GameBoard.reset()
-            }
-        }
-        return flag
+            
+            return tie
     }
 
 
-    return{reset}
+    return{reset, checkWin, checkTie}
 })()
