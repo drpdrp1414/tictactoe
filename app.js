@@ -54,7 +54,6 @@ const displayController = (() => {
 function createPlayer(name, symbol){
     this.name = name
     this.symbol = symbol
-    //console.log(`Created Player: ${this.name}`)
     return{name, symbol}
     
 }
@@ -64,42 +63,25 @@ function createBot(name, symbol){
     this.symbol = symbol
 
     function score(board, player){
-        if(GameController.checkWin(board, this) == true){
+        if(GameController.checkWin(board, this) == 'X'){
             return 1
-        }else if(GameController.checkWin(board, player) == true){
+        }else if(GameController.checkWin(board, player) == 'O'){
             return -1
-        }else if(GameController.checkTie(board)){
+        }else if(GameController.checkTie(board) == true){
             return 0
         }else{
             return null
         }
     }
 
-    function bestMove(board, player){
-        let bestScore = -10
-        let move
-        for(let i = 0; i < 9; i++){
-            if(board[i] == ''){
-                board[i] = this.symbol
-                let score = minimax(board, player, true)
-                board[i] = ''
-                if(score > bestScore){
-                    bestScore = score
-                    move = i
-                }
-                
-            }
-        }
-        return move
-    }
-    function minimax(board, player, isMax){
+    function minimax(board, player, isMax = true){
+        let moves = []
         let result = score(board, player)
         if(result !== null){
-            let score = result
-            return score
+            return result
         }
         if(isMax == true){
-            let bestScore = -10
+            let bestScore = -1000.
             for(let i = 0; i < 9; i++){
                 if(board[i] == ''){
                     board[i] = this.symbol
@@ -109,8 +91,9 @@ function createBot(name, symbol){
                 }
             }
             return bestScore
-        }else{
-            let bestScore = 10
+        }
+        if(isMax == false){
+            let bestScore = 1000
             for(let i = 0; i < 9; i++){
                 if(board[i] == ''){
                     board[i] = player.symbol
@@ -123,7 +106,7 @@ function createBot(name, symbol){
         }
     }
 
-    return {name, symbol, bestMove}
+    return {name, symbol, findMove}
 
 }
 
@@ -169,16 +152,15 @@ const GameController = (() => {
 
 
     function botPlaceLogic(){
-        move = player1.bestMove(GameBoard.board, player2)
-
+        move = player1.findMove(GameBoard.board, player2)
         //console.log(`player1: ${player1.name}, player2: ${player2.name}`)
         placePiece(player1, GameBoard.board, move)
         var win = checkWin(GameBoard.board, currentPlayer)
-        if(win == true){
-            alert(`${player.name} has won! Congrats!`)
+        if(win == 'X' || win == 'O'){
+            alert(`${currentPlayer.name} has won! Congrats!`)
             GameBoard.reset()
         }
-        if(win == false){
+        if(win == null){
             var tie = checkTie(GameBoard.board)
             if(tie == true){
                     alert(`This game was a tie! Play again!`)
@@ -186,7 +168,7 @@ const GameController = (() => {
             }
         }
         //switch to other player
-        if(win == false && tie == false){
+        if(win == null && tie == false){
             currentPlayer = switchTurn(currentPlayer)
         }
     }
@@ -200,11 +182,10 @@ const GameController = (() => {
 
         //check for win/tie
         var win = checkWin(GameBoard.board, currentPlayer)
-        if(win == true){
+        if(win !== null){
             alert(`${currentPlayer.name} has won! Congrats!`)
             GameBoard.reset()
-        }
-        if(win == false){
+        }else{
             var tie = checkTie(GameBoard.board)
             if(tie == true){
                     alert(`This game was a tie! Play again!`)
@@ -212,7 +193,7 @@ const GameController = (() => {
             }
         }
         //switch to other player
-        if(win == false && tie == false){
+        if(win == null && tie == false){
             currentPlayer = switchTurn(currentPlayer)
         }
         if(aiGame == true){
@@ -281,31 +262,32 @@ const GameController = (() => {
     }
 
     function checkWin(board, player){
-        var flag = false
         var symbol = player.symbol
         //check horizontal
         if(
             ((symbol === board[0]) && (board[0] == board[1]) && (board[1] === board[2])) || 
             ((symbol === board[3]) && (board[3] == board[4]) && (board[4] === board[5])) ||
             ((symbol === board[6]) && (board[6] == board[7]) && (board[7] === board[8]))){
-                flag = true
+                return symbol
             }
         //check vertical
-        if(
+        else if(
             ((symbol === board[0]) && (board[0] == board[3]) && (board[3] === board[6])) || 
             ((symbol === board[1]) && (board[1] == board[4]) && (board[4] === board[7])) ||
             ((symbol === board[2]) && (board[2] == board[5]) && (board[5] === board[8]))){
-                flag = true
+                return symbol
             }
         //check diagonal
-        if(
+        else if(
             ((symbol === board[0]) && (board[0] == board[4]) && (board[4] === board[8])) || 
             ((symbol === board[2]) && (board[2] == board[4]) && (board[4] === board[6]))){
-                flag = true
+                return symbol
             }
+        else{
+            return null
+        }
 
         
-        return flag
     }
 
     function checkTie(board){
